@@ -40,10 +40,12 @@ UIRenderer::~UIRenderer() {
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext(m_ImCtx);
 
-    DEV_LOG("Good bye!");
+    //DEV_LOG("Good bye!");
 }
 
 void UIRenderer::PreRenderUpdate() {
+    ZoneScoped;
+
     m_ImIO->DeltaTime   = CTimer::GetTimeStepInSeconds();
     m_ImIO->DisplaySize = ImVec2(SCREEN_WIDTH, SCREEN_HEIGHT); // Update display size, in case of window resize after imgui was already initialized
 
@@ -69,6 +71,8 @@ void UIRenderer::PostRenderUpdate() {
 }
 
 void UIRenderer::DrawLoop() {
+    ZoneScoped;
+
     if (m_ReInitRequested) {
         ResetSingleton(); // This will destruct the current object so we gotta stop here.
         return;
@@ -96,10 +100,14 @@ void UIRenderer::DrawLoop() {
 }
 
 void UIRenderer::Render2D() {
+    ZoneScoped;
+
     m_DebugModules.Render2D();
 }
 
 void UIRenderer::Render3D() {
+    ZoneScoped;
+
     m_DebugModules.Render3D();
 }
 
@@ -111,30 +119,30 @@ void UIRenderer::DebugCode() {
     if (UIRenderer::Visible() || CPad::NewKeyState.lctrl || CPad::NewKeyState.rctrl)
         return;
 
-    if (pad->IsStandardKeyJustPressed('8')) {
-
-        CPointRoute route{};
-
-        const auto r = 10.f;
-        const auto totalAngle = PI * 2.f;
-        for (auto a = 0.f; a < totalAngle; a += totalAngle / 8.f) {
-            route.AddPoints(player->GetPosition() + CVector{std::cosf(a), std::sinf(a), 0.f} *r);
-        }
-
-        player->GetTaskManager().SetTask(
-            new CTaskComplexFollowPointRoute{
-                PEDMOVE_SPRINT,
-                route,
-                CTaskComplexFollowPointRoute::Mode::ONE_WAY,
-                3.f,
-                3.f,
-                false,
-                true,
-                true
-            },
-            TASK_PRIMARY_PRIMARY
-        );
-    }
+    //if (pad->IsStandardKeyJustPressed('8')) {
+    //
+    //    CPointRoute route{};
+    //
+    //    const auto r = 10.f;
+    //    const auto totalAngle = PI * 2.f;
+    //    for (auto a = 0.f; a < totalAngle; a += totalAngle / 8.f) {
+    //        route.AddPoints(player->GetPosition() + CVector{std::cosf(a), std::sinf(a), 0.f} *r);
+    //    }
+    //
+    //    player->GetTaskManager().SetTask(
+    //        new CTaskComplexFollowPointRoute{
+    //            PEDMOVE_SPRINT,
+    //            route,
+    //            CTaskComplexFollowPointRoute::Mode::ONE_WAY,
+    //            3.f,
+    //            3.f,
+    //            false,
+    //            true,
+    //            true
+    //        },
+    //        TASK_PRIMARY_PRIMARY
+    //    );
+    //}
 
     if (pad->IsStandardKeyJustPressed('0')) {
         if (const auto veh = FindPlayerVehicle()) {
@@ -159,8 +167,9 @@ void UIRenderer::DebugCode() {
     if (pad->IsStandardKeyJustPressed('3')) {
         CCheat::VehicleCheat(MODEL_INFERNUS);
     }
-    if (pad->IsStandardKeyJustPressed('4')) {
-        CTimer::Suspend();
+    if (pad->IsStandardKeyJustDown('8')) {
+        TheCamera.AddShakeSimple(10000.f, 1, 10.f);
+        DEV_LOG("Hey");
     }
     if (pad->IsStandardKeyJustPressed('5')) {
         if (const auto veh = FindPlayerVehicle()) {
