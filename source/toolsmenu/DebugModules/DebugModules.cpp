@@ -10,6 +10,7 @@
 #include "./Audio/CutsceneTrackManagerDebugModule.h"
 #include "./Audio/AmbienceTrackManagerDebugModule.h"
 #include "./Audio/PoliceScannerAudioEntityDebugModule.h"
+#include "./Audio/UserRadioTrackDebugModule.h"
 #include "./CStreamingDebugModule.h"
 #include "./CPickupsDebugModule.h"
 #include "./CDarkelDebugModule.h"
@@ -25,6 +26,7 @@
 #include "./ScriptDebugModule.hpp"
 #include "./CloudsDebugModule.hpp"
 #include "./AudioZonesDebugModule.h"
+#include "./WeaponDebugModule.hpp"
 
 DebugModules::DebugModules(ImGuiContext* ctx) :
     m_ImCtx(ctx)
@@ -84,8 +86,10 @@ void DebugModules::CreateModules() {
     Add<PoliceScannerAudioEntityDebugModule>();
     Add<AmbienceTrackManagerDebugModule>();
     Add<CutsceneTrackManagerDebugModule>();
+    Add<UserRadioTrackDebugModule>();
     Add<notsa::debugmodules::ScriptDebugModule>();
     Add<notsa::debugmodules::CloudsDebugModule>();
+    Add<notsa::debugmodules::WeaponDebugModule>();
 
     // Stuff that is present in multiple menus
     Add<TimeCycleDebugModule>(); // Visualization + Extra
