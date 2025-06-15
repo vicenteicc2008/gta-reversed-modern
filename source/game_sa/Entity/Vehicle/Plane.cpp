@@ -185,7 +185,7 @@ void CPlane::BlowUpCar(CEntity* damager, bool bHideExplosion) {
     if (!vehicleFlags.bCanBeDamaged)
         return;
 
-    if (m_nStatus == STATUS_PLAYER || m_autoPilot.m_nCarMission == MISSION_CRASH_PLANE_AND_BURN || m_nModelIndex == MODEL_RCBARON) {
+    if (m_nStatus == STATUS_PLAYER || m_autoPilot.m_nCarMission == MISSION_PLANE_CRASH_AND_BURN || m_nModelIndex == MODEL_RCBARON) {
         if (damager == FindPlayerPed() || damager == FindPlayerVehicle()) {
             FindPlayerInfo().m_nHavocCaused += 20;
             FindPlayerInfo().m_fCurrentChaseValue += 10.0f;
@@ -207,7 +207,7 @@ void CPlane::BlowUpCar(CEntity* damager, bool bHideExplosion) {
         }
 
         // m_nType = m_nType & 7 | STATUS_WRECKED;
-        physicalFlags.bDestroyed = true;
+        physicalFlags.bRenderScorched = true;
         m_nTimeWhenBlowedUp = CTimer::GetTimeInMS();
         CVisibilityPlugins::SetClumpForAllAtomicsFlag(m_pRwClump, ATOMIC_IS_BLOWN_UP);
         m_damageManager.FuckCarCompletely(false);
@@ -264,7 +264,7 @@ void CPlane::BlowUpCar(CEntity* damager, bool bHideExplosion) {
             CExplosion::AddExplosion(this, damager, EXPLOSION_AIRCRAFT, GetPosition(), 0, 1, -1.0f, 0);
         }
     } else {
-        m_autoPilot.m_nCarMission = MISSION_CRASH_PLANE_AND_BURN;
+        m_autoPilot.SetCarMission(MISSION_PLANE_CRASH_AND_BURN);
         m_fHealth = 0.0f;
     }
 }
@@ -336,9 +336,8 @@ void CPlane::SetGearDown() {
 // 0x6CCA50
 uint32 CPlane::CountPlanesAndHelis() {
     uint32 counter = 0;
-    for (auto i = 0; i < GetVehiclePool()->GetSize(); i++) {
-        auto vehicle = GetVehiclePool()->GetAt(i);
-        if (vehicle && (vehicle->IsSubHeli() || vehicle->IsSubPlane())) {
+    for (auto& vehicle : GetVehiclePool()->GetAllValid()) {
+        if (vehicle.IsSubHeli() || vehicle.IsSubPlane()) {
             counter++;
         }
     }
@@ -425,17 +424,17 @@ void CPlane::ProcessControl() {
 
     CAutomobile::ProcessControl();
 
-    m_vehicleAudio.field_7C = static_cast<int16>(field_9A0);
+    m_vehicleAudio.m_DoCountStalls = static_cast<int16>(field_9A0);
     if (field_9A0) {
         field_9A0 = 0;
     }
 
     CVehicle::ProcessWeapons();
     if (m_nModelIndex == MODEL_VORTEX) {
-        m_aWheelState[0] = WHEEL_STATE_NORMAL;
-        m_aWheelState[1] = WHEEL_STATE_NORMAL;
-        m_aWheelState[2] = WHEEL_STATE_NORMAL;
-        m_aWheelState[3] = WHEEL_STATE_NORMAL;
+        m_WheelStates[0] = WHEEL_STATE_NORMAL;
+        m_WheelStates[1] = WHEEL_STATE_NORMAL;
+        m_WheelStates[2] = WHEEL_STATE_NORMAL;
+        m_WheelStates[3] = WHEEL_STATE_NORMAL;
     }
 
     if (m_pSmokeParticle) {

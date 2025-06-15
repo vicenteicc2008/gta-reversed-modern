@@ -18,7 +18,6 @@ public:
     constexpr CVector() = default;
     constexpr CVector(float X, float Y, float Z) : RwV3d{ X, Y, Z } {}
     constexpr CVector(RwV3d rwVec) { x = rwVec.x; y = rwVec.y; z = rwVec.z; }
-    constexpr CVector(const CVector* rhs) { x = rhs->x; y = rhs->y; z = rhs->z; } // TODO: Remove
     constexpr explicit CVector(float value) { x = y = z = value; }
     explicit CVector(const CVector2D& v2, float z = 0.f);
 
@@ -41,10 +40,20 @@ public:
     float NormaliseAndMag();
 
     /// Get a normalized copy of this vector
-    auto Normalized() const -> CVector;
+    auto Normalized(float* outMag = nullptr) const -> CVector {
+        CVector cpy = *this;
+        const float mag = cpy.NormaliseAndMag();
+        if (outMag) {
+            *outMag = mag;
+        }
+        return cpy;
+    }
 
     /// Perform a dot product with this and `o`, returning the result
     auto Dot(const CVector& o) const -> float;
+
+    /// Perform a 2D dot product with this and `o`, returning the result
+    auto Dot2D(const CVector& o) const -> float;
 
     /*!
     * @notsa
@@ -142,11 +151,11 @@ public:
         return projectOnTo * (Dot(projectOnTo) + offset);
     }
 
-    //! Calculate the average position
-    static CVector Average(const CVector* begin, const CVector* end);
-
-    static CVector AverageN(const CVector* begin, size_t n) {
-        return Average(begin, begin + n);
+    //! Calculate the center of all provided vectors. Same operation as averaging.
+    template<rng::input_range R = std::initializer_list<CVector>>
+        requires rng::sized_range<R>
+    static CVector Centroid(R&& rng) {
+        return rng::fold_left(rng, CVector{}, std::plus{}) / std::size(rng);
     }
 
     auto GetComponents() const {
@@ -166,11 +175,11 @@ public:
     * @notsa
     * @return Make all component's values absolute (positive).
     */
-    static friend CVector abs(CVector vec) {
+    constexpr friend CVector abs(CVector vec) {
         return { std::abs(vec.x), std::abs(vec.y), std::abs(vec.z) };
     }
 
-    static friend CVector pow(CVector vec, float power) {
+    constexpr friend CVector pow(CVector vec, float power) {
         return { std::pow(vec.x, power), std::pow(vec.y, power), std::pow(vec.z, power) };
     }
     
@@ -189,6 +198,28 @@ public:
         return false;
     }
 #endif
+
+    /*!
+    * @brief Prefer this over (a - b).Magnitude()
+    * @param a Point A
+    * @param b Point B
+    * @return 3D Distance between 2 points
+    */
+    static inline float Dist(CVector a, CVector b) {
+        return (a - b).Magnitude();
+    }
+
+    /*!
+    * @brief Prefer this over (a - b).SquaredMagnitude()
+    * @param a Point A
+    * @param b Point B
+    * @return 3D Squared distance between 2 points
+    */
+    static inline float DistSqr(CVector a, CVector b) {
+        return (a - b).SquaredMagnitude();
+    }
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(CVector, x, y, z);
 };
 VALIDATE_SIZE(CVector, 0xC);
 

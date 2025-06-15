@@ -99,9 +99,7 @@ void CAEAmbienceTrackManager::UpdateAmbienceTrackAndVolume() {
         }
 
         const auto GetVolumeByAuZoDist = [&] {
-            CVector relPos;
-            CAEAudioEnvironment::GetPositionRelativeToCamera(&relPos, &activeAuZoPos);
-            return CAEAudioEnvironment::GetDistanceAttenuation(relPos.Magnitude() * 0.2f) - 6.f;
+            return CAEAudioEnvironment::GetDistanceAttenuation(CAEAudioEnvironment::GetPositionRelativeToCamera(activeAuZoPos).Magnitude() * 0.2f) - 6.f;
         };
 
         switch (activeAuZoIdx) {
@@ -258,11 +256,11 @@ void CAEAmbienceTrackManager::UpdateAmbienceTrackAndVolume() {
                 AudioEngine.StopRadio(nullptr, false);
             }
         } else {
-            AudioEngine.StartRadio(m_AmbienceRadioStation, 2);
+            AudioEngine.StartRadio(m_AmbienceRadioStation, eBassSetting::CUT);
         }
     } else if (prevAmbienceRadioStation != RADIO_INVALID) { //>0x4D71E5 - Radio was running previously, but isn't anymore, so stop it
         if (AudioEngine.IsRadioOn()) {
-            AudioEngine.StopRadio(0, 0);
+            AudioEngine.StopRadio(nullptr, false);
         }
     } else if (AudioEngine.IsRadioOn()) { // 0x4D720A
         if (m_OverrideRadio) {
@@ -288,7 +286,7 @@ void CAEAmbienceTrackManager::UpdateAmbienceTrackAndVolume() {
                         } else {
                             StopAmbienceTrack();
                             if (m_LastAmbienceOverrodeRadio || AudioEngine.IsVehicleRadioActive()) {
-                                AudioEngine.StartRadio(AudioEngine.GetCurrentRadioStationID(), 0);
+                                AudioEngine.StartRadio(AudioEngine.GetCurrentRadioStationID(), eBassSetting::NORMAL);
                             }
                             m_FreqFactor = 1.f;
                         }
@@ -319,9 +317,9 @@ void CAEAmbienceTrackManager::UpdateAmbienceTrackAndVolume() {
         } else if (m_RequestedSettings.TrackID != 174) { // 0x4D73AE
             FadeOutAndStop();
         } else { // 0x4D73E7
-            m_Volume = stepto(m_Volume, volume, 1.f);
+            m_Volume = notsa::step_to(m_Volume, volume, 1.f);
         }
-        m_FreqFactor = stepto(m_FreqFactor, CWeather::UnderWaterness < 0.5f ? 1.f : 0.0625f, 0.25f);   
+        m_FreqFactor = notsa::step_to(m_FreqFactor, CWeather::UnderWaterness < 0.5f ? 1.f : 0.0625f, 0.25f);   
     } else if (specialTrackId != m_SpecialMissionAmbienceTrackID) { // 0x4D7250
         if (m_AmbienceStatus == 8) {
             m_RequestedSettings.TrackID = specialTrackId;

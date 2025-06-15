@@ -45,7 +45,7 @@ public:
     std::array<CColPoint, 4>            m_wheelColPoint;                    // 0x724
     std::array<float, 4>                m_fWheelsSuspensionCompression;     // 0x7D4 - [0-1] with 0 being suspension fully compressed, and 1 being completely relaxed - Filled with 1.f in the ctor
     std::array<float, 4>                m_fWheelsSuspensionCompressionPrev; // 0x7E4 - Filled with 1.f in the ctor
-    std::array<float, 4>                m_aWheelTimer;
+    std::array<float, 4>                m_WheelCounts;
 
     float field_804;
     float m_fIntertiaValue1; //  m_anWheelSurfaceType[2]
@@ -90,36 +90,36 @@ public:
     float m_fTireTemperature;
     float m_fAircraftGoToHeading;
     float m_fRotationBalance; // Controls destroyed helicopter rotation
-    float m_fMoveDirection;
+    float m_PrevSpeed;
     CVector m_moveForce;
     CVector m_turnForce;
-    std::array<float, 6> field_8CC; // Inited in ctor with random values, but seemingly unused.
+    std::array<float, 6> DoorRotation; // Inited in ctor with random values, but seemingly unused.
 
     float m_fBurnTimer;
 
-    std::array<CPhysical*, 4> m_apWheelCollisionEntity;
-    std::array<CVector, 4>    m_vWheelCollisionPos; // Bike::m_avTouchPointsLocalSpace
+    std::array<CPhysical*, 4> m_apWheelCollisionEntity{};
+    std::array<CVector, 4>    m_vWheelCollisionPos{}; // Bike::m_avTouchPointsLocalSpace
 
     CPed* m_pExplosionVictim;
     std::array<char, 24> field_928;
 
-    int32 field_940;
-    int32 field_944;
+    float LeftDoorOpenForDriveBys;
+    float RightDoorOpenForDriveBys;
     float m_fDoomVerticalRotation;
     float m_fDoomHorizontalRotation;
     float m_fForcedOrientation;
     std::array<float, 2> m_fUpDownLightAngle;
     uint8 m_nNumContactWheels;
-    uint8 m_nWheelsOnGround;
-    uint8 m_wheelsOnGrounPrev;
-    float m_fGasPedalAudio; // [0; 1] adjusts the speed of playback of the skiding sound
+    uint8 m_NumDriveWheelsOnGround;
+    uint8 m_NumDriveWheelsOnGroundLastFrame;
+    float m_GasPedalAudioRevs; // [0; 1] adjusts the speed of playback of the skiding sound
 
-    std::array<tWheelState, 4> m_aWheelState;
+    std::array<tWheelState, 4> m_WheelStates;
     std::array<FxSystem_c*, 2> m_exhaustNitroFxSystem;
 
     uint8 m_harvesterParticleCounter;
     uint8 m_fireParticleCounter;
-    int16 field_982;
+    int16 __pad_982;
     float m_heliDustFxTimeConst;
 
     // variables
@@ -153,16 +153,16 @@ public:
     //!!!!!!!!!!!!!!!!!!!
     // PAY CLOSE ATTENTION TO WHICH VERSION OF THE FUNCTIONS DOWN BELOW YOU'RE CALLING!
     //!!!!!!!!!!!!!!!!!!!
-    float GetDooorAngleOpenRatio(eDoors door) override;
     float GetDooorAngleOpenRatioU32(uint32 door) override;
-    bool IsDoorReady(eDoors door) override;
+    float GetDooorAngleOpenRatio(eDoors door) override;
     bool IsDoorReadyU32(uint32 door) override;
-    bool IsDoorFullyOpen(eDoors door) override;
+    bool IsDoorReady(eDoors door) override;
     bool IsDoorFullyOpenU32(uint32 door) override;
-    bool IsDoorClosed(eDoors door) override;
+    bool IsDoorFullyOpen(eDoors door) override;
     bool IsDoorClosedU32(uint32 door) override;
-    bool IsDoorMissing(eDoors door) override;
+    bool IsDoorClosed(eDoors door) override;
     bool IsDoorMissingU32(uint32 door) override;
+    bool IsDoorMissing(eDoors door) override;
 
     bool IsOpenTopCar() override;
     void RemoveRefsToVehicle(CEntity* entity) override;
@@ -196,6 +196,7 @@ public:
     int32 ProcessEntityCollision(CEntity* entity, CColPoint* colPoint) override;
 
     void PreRender() override;
+    void Render() override;
 
     // Find and save components ptrs (RwFrame) to m_modelNodes array
     void SetupModelNodes();
@@ -285,7 +286,7 @@ public:
     void SetBumperDamage(ePanels panel, bool withoutVisualEffect);
     void SetPanelDamage(ePanels panel, bool createWindowGlass);
     void SetDoorDamage(eDoors door, bool withoutVisualEffect);
-    bool RcbanditCheck1CarWheels(CPtrList& ptrList);
+    bool RcbanditCheck1CarWheels(CPtrListDoubleLink<CVehicle*>& ptrList);
     bool RcbanditCheckHitWheels();
     void FireTruckControl(CFire* fire);
     bool HasCarStoppedBecauseOfLight();
@@ -294,6 +295,7 @@ public:
 
     CBouncingPanel* CheckIfExistsGetFree(eCarNodes nodeIdx);
     CDoor& GetDoor(eDoors door) { return m_doors[(unsigned)door]; }
+    CDamageManager& GetDamageManager() { return m_damageManager; }
 
     void SetEngineState(bool state) {
         if (vehicleFlags.bEngineBroken)
@@ -403,7 +405,7 @@ VALIDATE_OFFSET(CAutomobile, m_wheelColPoint, 0x724);
 VALIDATE_OFFSET(CAutomobile, autoFlags, 0x868);
 VALIDATE_OFFSET(CAutomobile, m_bDoingBurnout, 0x86A);
 VALIDATE_OFFSET(CAutomobile, m_wMiscComponentAngle, 0x86C);
-VALIDATE_OFFSET(CAutomobile, m_fGasPedalAudio, 0x964);
+VALIDATE_OFFSET(CAutomobile, m_GasPedalAudioRevs, 0x964);
 
 // Disable matfx (material effects) for material (callback), "data" parameter is unused
 RpMaterial *DisableMatFx(RpMaterial* material, void* data);

@@ -69,12 +69,6 @@ void CAtomicModelInfo::DeleteRwObject()
         CAnimManager::RemoveAnimBlockRef(iAnimIndex);
 }
 
-// 0x4C5580
-uint32 CAtomicModelInfo::GetRwModelType()
-{
-    return rpATOMIC;
-}
-
 RwObject* CAtomicModelInfo::CreateInstance()
 {
     if (!m_pRwObject)
@@ -180,7 +174,7 @@ void CAtomicModelInfo::SetupVehicleUpgradeFlags(const char* name)
         }
 
         bUseCommonVehicleDictionary = true;
-        nCarmodId = pChassis->m_nFlag;
+        CarMod = pChassis->m_nFlag;
         return;
     }
 
@@ -193,7 +187,7 @@ void CAtomicModelInfo::SetupVehicleUpgradeFlags(const char* name)
 
         bUseCommonVehicleDictionary = true;
         bUsesVehDummy = true;
-        nCarmodId = pDummy->m_nFlag;
+        CarMod = pDummy->m_nFlag;
         return;
     }
 }

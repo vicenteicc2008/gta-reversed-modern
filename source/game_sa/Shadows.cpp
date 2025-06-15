@@ -34,9 +34,9 @@ void CShadows::InjectHooks() {
     RH_ScopedInstall(RenderStaticShadows, 0x708300);
     RH_ScopedInstall(CastShadowEntityXY, 0x7086B0, { .reversed = false });
     RH_ScopedInstall(CastShadowEntityXYZ, 0x70A040, { .reversed = false });
-    RH_ScopedInstall(CastPlayerShadowSectorList, 0x70A470);
-    RH_ScopedInstall(CastShadowSectorList, 0x70A630, { .reversed = false });
-    RH_ScopedInstall(CastRealTimeShadowSectorList, 0x70A7E0, { .reversed = false });
+    RH_ScopedInstall(CastPlayerShadowSectorList<CPtrListSingleLink<CPhysical*>>, 0x70A470);
+    RH_ScopedInstall(CastShadowSectorList<CPtrListSingleLink<CPhysical*>>, 0x70A630, { .reversed = false });
+    RH_ScopedInstall(CastRealTimeShadowSectorList<CPtrListSingleLink<CPhysical*>>, 0x70A7E0, { .reversed = false });
     RH_ScopedInstall(RenderStoredShadows, 0x70A960);
     RH_ScopedInstall(GeneratePolysForStaticShadow, 0x70B730, { .reversed = false });
     RH_ScopedInstall(StoreStaticShadow, 0x70BA00, { .reversed = false });
@@ -243,8 +243,8 @@ void CShadows::SetRenderModeForShadowType(eShadowType type) {
 }
 
 // 0x7074F0
-void CShadows::RemoveOilInArea(float x1, float x2, float y1, float y2) {
-    CRect rect{ {x1, y1}, {x2, y2} };
+void CShadows::RemoveOilInArea(float minX, float maxX, float minY, float maxY) {
+    CRect rect{ {minX, minY}, {maxX, maxY} };
     for (auto& shadow : aPermanentShadows) {
         switch (shadow.m_nType) {
         case SHADOW_OIL_1:
@@ -298,19 +298,24 @@ void CShadows::PrintDebugPoly(CVector* a, CVector* b, CVector* c) {
 }
 
 // 0x7076C0
-void CShadows::CalcPedShadowValues(CVector sunPosn, float& displacementX, float& displacementY, float& frontX, float& frontY, float& sideX, float& sideY) {
+void CShadows::CalcPedShadowValues(
+    CVector sunPosn,
+    float& frontX,        float& frontY,
+    float& sideX,         float& sideY,
+    float& displacementX, float& displacementY
+) {
     const auto sunDist = sunPosn.Magnitude2D();
     const auto recip = 1.0f / sunDist;
+
     const auto mult = (sunDist + 1.0f) * recip;
+    frontX = -sunPosn.x * mult / 2.0f;
+    frontY = -sunPosn.y * mult / 2.0f;
 
-    displacementX = -sunPosn.x * mult / 2.0f;
-    displacementY = -sunPosn.y * mult / 2.0f;
+    sideX = -sunPosn.y * recip / 2.0f;
+    sideY = +sunPosn.x * recip / 2.0f;
 
-    frontX = -sunPosn.y * recip / 2.0f;
-    frontY = +sunPosn.x * recip / 2.0f;
-
-    sideX = -sunPosn.x / 2.0f;
-    sideY = -sunPosn.y / 2.0f;
+    displacementX = -sunPosn.x / 2.0f;
+    displacementY = -sunPosn.y / 2.0f;
 }
 
 // 0x707850
@@ -651,8 +656,9 @@ void CShadows::CastShadowEntityXYZ(CEntity* entity, CVector* posn, float frontX,
 }
 
 // 0x70A470
+template<typename PtrListType>
 void CShadows::CastPlayerShadowSectorList(
-    CPtrList& ptrList,
+    PtrListType& ptrList,
     float cornerAX,
     float cornerAY,
     float cornerBX,
@@ -676,11 +682,7 @@ void CShadows::CastPlayerShadowSectorList(
         cornerAX, cornerAY,
         cornerBX, cornerBY
     };
-    for (CPtrNode* it = ptrList.m_node, *next{}; it; it = next) {
-        next = it->GetNext();
-
-        auto* entity = reinterpret_cast<CEntity*>(it->m_item);
-
+    for (auto* const entity : ptrList) {
         if (entity->IsScanCodeCurrent()) {
             continue;
         }
@@ -739,14 +741,16 @@ void CShadows::CastPlayerShadowSectorList(
 }
 
 // 0x70A630
-void CShadows::CastShadowSectorList(CPtrList& ptrList, float conrerAX, float cornerAY, float cornerBX, float cornerBY, CVector* posn, float frontX, float frontY, float sideX, float sideY, int16 intensity, uint8 red, uint8 green, uint8 blue, float zDistance, float scale, CPolyBunch** ppPolyBunch, uint8* pDayNightIntensity, int32 shadowType) {
+template<typename PtrListType>
+void CShadows::CastShadowSectorList(PtrListType& ptrList, float conrerAX, float cornerAY, float cornerBX, float cornerBY, CVector* posn, float frontX, float frontY, float sideX, float sideY, int16 intensity, uint8 red, uint8 green, uint8 blue, float zDistance, float scale, CPolyBunch** ppPolyBunch, uint8* pDayNightIntensity, int32 shadowType) {
     // Nearly identical to `CastPlayerShadowSectorList`, the difference is 1 check is missing... :D
-    ((void(__cdecl*)(CPtrList&, float, float, float, float, CVector*, float, float, float, float, int16, uint8, uint8, uint8, float, float, CPolyBunch**, uint8*, int32))0x70A630)(ptrList, conrerAX, cornerAY, cornerBX, cornerBY, posn, frontX, frontY, sideX, sideY, intensity, red, green, blue, zDistance, scale, ppPolyBunch, pDayNightIntensity, shadowType);
+    ((void(__cdecl*)(PtrListType&, float, float, float, float, CVector*, float, float, float, float, int16, uint8, uint8, uint8, float, float, CPolyBunch**, uint8*, int32))0x70A630)(ptrList, conrerAX, cornerAY, cornerBX, cornerBY, posn, frontX, frontY, sideX, sideY, intensity, red, green, blue, zDistance, scale, ppPolyBunch, pDayNightIntensity, shadowType);
 }
 
 // 0x70A7E0
-void CShadows::CastRealTimeShadowSectorList(CPtrList& ptrList, float conrerAX, float cornerAY, float cornerBX, float cornerBY, CVector* posn, float frontX, float frontY, float sideX, float sideY, int16 intensity, uint8 red, uint8 green, uint8 blue, float zDistance, float scale, CPolyBunch** ppPolyBunch, CRealTimeShadow* realTimeShadow, uint8* pDayNightIntensity) {
-    ((void(__cdecl*)(CPtrList&, float, float, float, float, CVector*, float, float, float, float, int16, uint8, uint8, uint8, float, float, CPolyBunch**, CRealTimeShadow*, uint8*))0x70A7E0)(ptrList, conrerAX, cornerAY, cornerBX, cornerBY, posn, frontX, frontY, sideX, sideY, intensity, red, green, blue, zDistance, scale, ppPolyBunch, realTimeShadow, pDayNightIntensity);
+template<typename PtrListType>
+void CShadows::CastRealTimeShadowSectorList(PtrListType& ptrList, float conrerAX, float cornerAY, float cornerBX, float cornerBY, CVector* posn, float frontX, float frontY, float sideX, float sideY, int16 intensity, uint8 red, uint8 green, uint8 blue, float zDistance, float scale, CPolyBunch** ppPolyBunch, CRealTimeShadow* realTimeShadow, uint8* pDayNightIntensity) {
+    ((void(__cdecl*)(PtrListType&, float, float, float, float, CVector*, float, float, float, float, int16, uint8, uint8, uint8, float, float, CPolyBunch**, CRealTimeShadow*, uint8*))0x70A7E0)(ptrList, conrerAX, cornerAY, cornerBX, cornerBY, posn, frontX, frontY, sideX, sideY, intensity, red, green, blue, zDistance, scale, ppPolyBunch, realTimeShadow, pDayNightIntensity);
 }
 
 // 0x70A960

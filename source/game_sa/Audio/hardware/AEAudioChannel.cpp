@@ -25,25 +25,25 @@ void CAEAudioChannel::InjectHooks() {
 
 // 0x4D7890
 CAEAudioChannel::CAEAudioChannel(IDirectSound* directSound, uint16 channelId, uint32 samplesPerSec, uint16 bitsPerSample) {
-    m_pDirectSound        = directSound;
-    m_nChannelId          = channelId;
-    m_nFlags              = 0;
-    m_nBufferStatus       = 0;
-    m_nFrequency          = samplesPerSec;
-    m_nOriginalFrequency  = samplesPerSec;
-    m_fVolume             = -100.0f;
-    m_pDirectSoundBuffer  = nullptr;
-    m_pDirectSound3DBuffer= nullptr;
-    m_bNoScalingFactor    = false;
-    m_bLooped             = false;
-    field_45              = 0;
-    m_WaveFormat.wFormatTag = WAVE_FORMAT_PCM;
-    m_WaveFormat.nChannels = 1;
-    m_WaveFormat.nSamplesPerSec = samplesPerSec;
+    m_pDirectSound               = directSound;
+    m_nChannelId                 = channelId;
+    m_nFlags                     = 0;
+    m_nBufferStatus              = 0;
+    m_nFrequency                 = samplesPerSec;
+    m_nOriginalFrequency         = samplesPerSec;
+    m_Volume                    = -100.0f;
+    m_pDirectSoundBuffer         = nullptr;
+    m_pDirectSound3DBuffer       = nullptr;
+    m_bPaused                    = false;
+    m_bLooped                    = false;
+    m_bShouldStop                = false;
+    m_WaveFormat.wFormatTag      = WAVE_FORMAT_PCM;
+    m_WaveFormat.nChannels       = 1;
+    m_WaveFormat.nSamplesPerSec  = samplesPerSec;
     m_WaveFormat.nAvgBytesPerSec = samplesPerSec * (bitsPerSample / 8);
-    m_WaveFormat.nBlockAlign = 2;
-    m_WaveFormat.wBitsPerSample = bitsPerSample;
-    m_WaveFormat.cbSize = 0;
+    m_WaveFormat.nBlockAlign     = 2;
+    m_WaveFormat.wBitsPerSample  = bitsPerSample;
+    m_WaveFormat.cbSize          = 0;
 }
 
 // 0x4D7910
@@ -62,21 +62,21 @@ CAEAudioChannel::~CAEAudioChannel() {
 void CAEAudioChannel::SetFrequencyScalingFactor(float factor) {
     if (factor == 0.0F) {
         if (m_pDirectSoundBuffer &&
-            !m_bNoScalingFactor &&
+            !m_bPaused &&
             IsBufferPlaying() &&
             !AESmoothFadeThread.RequestFade(m_pDirectSoundBuffer, -100.0F, -1, true)
         ) {
             m_pDirectSoundBuffer->Stop();
         }
 
-        m_bNoScalingFactor = true;
+        m_bPaused = true;
         return;
     }
 
     const auto newFreq = static_cast<uint32>(float(m_nOriginalFrequency) * factor);
     SetFrequency(newFreq);
 
-    if (m_bNoScalingFactor) {
+    if (m_bPaused) {
         if (m_pDirectSoundBuffer) {
             const auto curPos = GetCurrentPlaybackPosition();
             if (curPos != 0) {
@@ -85,12 +85,12 @@ void CAEAudioChannel::SetFrequencyScalingFactor(float factor) {
 
             m_pDirectSoundBuffer->Play(0, 0, m_bLooped);
 
-            if (curPos != 0 && !AESmoothFadeThread.RequestFade(m_pDirectSoundBuffer, m_fVolume, -2, false)) {
-                const auto volume = static_cast<LONG>(m_fVolume * 100.0F);
+            if (curPos != 0 && !AESmoothFadeThread.RequestFade(m_pDirectSoundBuffer, m_Volume, -2, false)) {
+                const auto volume = static_cast<LONG>(m_Volume * 100.0F);
                 m_pDirectSoundBuffer->SetVolume(volume);
             }
         }
-        m_bNoScalingFactor = false;
+        m_bPaused = false;
     }
 }
 
@@ -112,20 +112,20 @@ void CAEAudioChannel::SetVolume(float volume) {
     if (!m_pDirectSoundBuffer)
         return;
 
-    if (IsBufferPlaying() && fabs(volume - m_fVolume) > 60.0F) {
-        if (volume <= m_fVolume) {
+    if (IsBufferPlaying() && fabs(volume - m_Volume) > 60.0F) {
+        if (volume <= m_Volume) {
             if (AESmoothFadeThread.RequestFade(m_pDirectSoundBuffer, volume, -1, false)) {
-                m_fVolume = volume;
+                m_Volume = volume;
                 return;
             }
         } else if (AESmoothFadeThread.RequestFade(m_pDirectSoundBuffer, volume, -2, false)) {
-            m_fVolume = volume;
+            m_Volume = volume;
             return;
         }
     }
 
     AESmoothFadeThread.SetBufferVolume(m_pDirectSoundBuffer, volume);
-    m_fVolume = volume;
+    m_Volume = volume;
 }
 
 // 0x4D79A0

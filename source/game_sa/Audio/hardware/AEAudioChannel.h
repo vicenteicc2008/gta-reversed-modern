@@ -4,7 +4,6 @@
 
 #include "Vector.h"
 
-#define USE_DSOUND
 
 #pragma pack(push, 1)
 class NOTSA_EXPORT_VTABLE CAEAudioChannel {
@@ -21,16 +20,16 @@ public:
     char                  _pad10[24];
     uint32                m_nFlags;
     uint32                m_nLengthInBytes;
-    uint32                field_30; // unused
-    float                 m_fVolume;
-    bool                  m_bNoScalingFactor;
+    uint32                m_dwStopTime; // unused
+    float                 m_Volume;
+    bool                  m_bPaused;
     uint8                 field_39; // unused
     uint16                m_nChannelId;
     uint32                m_nFrequency;
     uint32                m_nOriginalFrequency;
     bool                  m_bLooped;
-    uint8                 field_45;
-    uint8                 field_46; // unused
+    bool                  m_bShouldStop;
+    bool                  m_bShouldPlay; // unused
     WAVEFORMATEX          m_WaveFormat;
     uint16                field_59;
 #ifdef USE_DSOUND
@@ -58,7 +57,7 @@ public:
     virtual void   SetFrequencyScalingFactor(float factor);
 
     void   SetPosition(const CVector& vecPos) const;
-    float  GetVolume() const { return m_fVolume; };
+    float  GetVolume() const { return m_Volume; };
     void   SetVolume(float volume);
     bool   IsBufferPlaying() const { return m_nBufferStatus & DSBSTATUS_PLAYING; };
     uint32 GetCurrentPlaybackPosition() const;

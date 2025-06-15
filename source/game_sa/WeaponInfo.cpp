@@ -47,7 +47,7 @@ void CWeaponInfo::Initialise() {
         info.m_fAnimLoop2End = 0.0f;
         info.m_fAnimLoop2Fire = 0.0f;
         info.m_fBreakoutTime = 0.0f;
-        info.m_fSpeed = 0.0f;
+        info.m_Speed = 0.0f;
         info.m_fRadius = 0.0f;
         info.m_fLifespan = 0.0f;
         info.m_fSpread = 0.0f;
@@ -105,7 +105,7 @@ bool CWeaponInfo::TypeIsWeapon(eWeaponType type) {
 // Get weapon info index for this type and with this skill
 // NOTSA
 uint32 CWeaponInfo::GetWeaponInfoIndex(eWeaponType wt, eWeaponSkill skill) {
-    assert(TypeIsWeapon(wt));
+    assert(TypeIsWeapon(wt) || (skill == eWeaponSkill::STD && (wt >= WEAPON_RAMMEDBYCAR && wt <= WEAPON_FLARE))); // Damage events also have their weapon info entries
 
     const auto GetNonSTDSkillLevelIndex = [wt](uint32 i) {
         assert(TypeHasSkillStats(wt));
@@ -228,9 +228,10 @@ void CWeaponInfo::LoadWeaponData() {
             wi.m_fMoveSpeed = moveSpeed;
             wi.m_fBreakoutTime = (float)breakoutTime / 30.f;
             wi.m_nFlags = flags;
-            wi.m_fSpeed = speed;
+            wi.m_Speed = speed;
             wi.m_fLifespan = lifespan;
             wi.m_fSpread = spread;
+            wi.m_fRadius = radius;
 
             const auto SetAnimLoopInfos = [&](auto& start, auto& end, auto& fire, auto idx) {
                 assert(start <= end);

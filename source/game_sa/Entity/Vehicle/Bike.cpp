@@ -63,9 +63,9 @@ CBike::CBike(int32 modelIndex, eVehicleCreatedBy createdBy) : CVehicle(createdBy
     auto mi = CModelInfo::GetModelInfo(modelIndex)->AsVehicleModelInfoPtr();
     if (mi->m_nVehicleType == VEHICLE_TYPE_BIKE) {
         const auto& animationStyle = CAnimManager::GetAnimBlocks()[mi->GetAnimFileIndex()].GroupId;
-        m_RideAnimData.m_nAnimGroup = animationStyle;
+        m_RideAnimData.AnimGroup = animationStyle;
         if (animationStyle < ANIM_GROUP_BIKES || animationStyle > ANIM_GROUP_WAYFARER) {
-            m_RideAnimData.m_nAnimGroup = ANIM_GROUP_BIKES;
+            m_RideAnimData.AnimGroup = ANIM_GROUP_BIKES;
         }
     }
 
@@ -97,14 +97,14 @@ CBike::CBike(int32 modelIndex, eVehicleCreatedBy createdBy) : CVehicle(createdBy
     m_fElasticity = 0.05f;
     m_fBuoyancyConstant = m_pHandlingData->m_fBuoyancyConstant;
     m_fSteerAngle = 0.0f;
-    m_fGasPedal = 0.0f;
-    m_fBreakPedal = 0.0f;
+    m_GasPedal = 0.0f;
+    m_BrakePedal = 0.0f;
     m_Damager = nullptr;
     m_pWhoInstalledBombOnMe = nullptr;
-    m_fGasPedalAudioRevs = 0.0f;
+    m_GasPedalAudioRevs = 0.0f;
     m_fTyreTemp = 1.0f;
     m_fBrakingSlide = 0.0f;
-    m_fPrevSpeed = 0.0f;
+    m_PrevSpeed = 0.0f;
 
     for (auto i = 0; i < 2; ++i) {
         m_nWheelStatus[i] = 0;
@@ -115,14 +115,14 @@ CBike::CBike(int32 modelIndex, eVehicleCreatedBy createdBy) : CVehicle(createdBy
         m_aWheelAngularVelocity[i] = 0.0f;
         m_aWheelSuspensionHeights[i] = 0.0f;
         m_aWheelOrigHeights[i] = 0.0f;
-        m_aWheelState[i] = WHEEL_STATE_NORMAL;
+        m_WheelStates[i] = WHEEL_STATE_NORMAL;
     }
 
     for (auto i = 0; i < 4; ++i) {
         m_aWheelColPoints[i] = {};
         m_aWheelRatios[i] = 1.0f;
         m_aRatioHistory[i] = 0.0f;
-        m_aWheelCounts[i] = 0.0f;
+        m_WheelCounts[i] = 0.0f;
         m_fSuspensionLength[i] = 0.0f;
         m_fLineLength[i] = 0.0f;
         m_aGroundPhysicalPtrs[i] = nullptr;
@@ -130,8 +130,8 @@ CBike::CBike(int32 modelIndex, eVehicleCreatedBy createdBy) : CVehicle(createdBy
     }
 
     m_nNoOfContactWheels = 0;
-    m_nDriveWheelsOnGround = 0;
-    m_nDriveWheelsOnGroundLastFrame = 0;
+    m_NumDriveWheelsOnGround = 0;
+    m_NumDriveWheelsOnGroundLastFrame = 0;
     m_fHeightAboveRoad = 0.0f;
     m_fExtraTractionMult = 1.0f;
 
@@ -143,9 +143,8 @@ CBike::CBike(int32 modelIndex, eVehicleCreatedBy createdBy) : CVehicle(createdBy
     mi->m_pColModel->m_pColData->m_pLines[0].m_vecStart.z = 99'999.99f;
     CBike::SetupSuspensionLines();
 
-    m_autoPilot.m_nCarMission = MISSION_NONE;
-    m_autoPilot.m_nTempAction = 0;
-    m_autoPilot.m_nTimeToStartMission = CTimer::GetTimeInMS();
+    m_autoPilot.m_nTempAction = TEMPACT_NONE;
+    m_autoPilot.SetCarMission(MISSION_NONE, 0);
     m_autoPilot.carCtrlFlags.bAvoidLevelTransitions = false;
 
     m_nStatus = STATUS_SIMPLE;
@@ -188,8 +187,8 @@ void CBike::SetRemoveAnimFlags(CPed* ped) {
 
 // 0x6B5F90
 void CBike::ReduceHornCounter() {
-    if (m_nHornCounter)
-        m_nHornCounter -= 1;
+    if (m_HornCounter)
+        m_HornCounter -= 1;
 }
 
 // 0x6B5FB0
@@ -269,7 +268,7 @@ inline void CBike::ProcessPedInVehicleBuoyancy(CPed* ped, bool bIsDriver) {
             ped->GetEventGroup().Add(&damageEvent, false);
         }
     } else {
-        auto knockOffBikeEvent = CEventKnockOffBike(this, &m_vecMoveSpeed, &m_vecLastCollisionImpactVelocity, m_fDamageIntensity, 0.0F, KNOCK_OFF_TYPE_FALL, 0, 0, nullptr, bIsDriver, false);
+        auto knockOffBikeEvent = CEventKnockOffBike(this, m_vecMoveSpeed, m_vecLastCollisionImpactVelocity, m_fDamageIntensity, 0.0F, KNOCK_OFF_TYPE_FALL, 0, 0, nullptr, bIsDriver, false);
         ped->GetEventGroup().Add(&knockOffBikeEvent);
         if (bIsDriver) {
             vehicleFlags.bEngineOn = false;
@@ -360,7 +359,7 @@ int32 CBike::ProcessEntityCollision(CEntity* entity, CColPoint* outColPoints) {
                 } else {
                     for (auto i = 0; i < numPedEntityColPts && numColPts < 32; i++) {
                         const auto& pedEntityCP = pedCPs[i];
-                        if (pedEntityCP.m_nPieceTypeA == PED_PIECE_UNKNOWN) {
+                        if (pedEntityCP.m_nPieceTypeA == PED_COL_SPHERE_LEG) {
                             continue;
                         }
                         outColPoints[numColPts++] = pedEntityCP;
@@ -463,12 +462,12 @@ void CBike::CalculateLeanMatrix() {
         return;
 
     CMatrix mat;
-    mat.SetRotateX(fabs(m_RideAnimData.m_fAnimLean) * -0.05f);
-    mat.RotateY(m_RideAnimData.m_fAnimLean);
+    mat.SetRotateX(fabs(m_RideAnimData.LeanAngle) * -0.05f);
+    mat.RotateY(m_RideAnimData.LeanAngle);
     m_mLeanMatrix = GetMatrix();
     m_mLeanMatrix = m_mLeanMatrix * mat;
     // place wheel back on ground
-    m_mLeanMatrix.GetPosition() += GetUp() * (1.0f - cos(m_RideAnimData.m_fAnimLean)) * GetColModel()->GetBoundingBox().m_vecMin.z;
+    m_mLeanMatrix.GetPosition() += GetUp() * (1.0f - cos(m_RideAnimData.LeanAngle)) * GetColModel()->GetBoundingBox().m_vecMin.z;
     m_bLeanMatrixCalculated = true;
 }
 
@@ -622,7 +621,7 @@ void CBike::GetComponentWorldPosition(int32 componentId, CVector& outPos) {
     if (IsComponentPresent(componentId))
         outPos = RwFrameGetLTM(m_aBikeNodes[componentId])->pos;
     else
-        DEV_LOG("BikeNode missing: model={}, nodeIdx={}", m_nModelIndex, componentId);
+        NOTSA_LOG_DEBUG("BikeNode missing: model={}, nodeIdx={}", m_nModelIndex, componentId);
 }
 
 // 0x6B58D0

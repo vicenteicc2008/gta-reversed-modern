@@ -74,6 +74,7 @@ public:
             uint32 bSlowdown : 1;
             uint32 bRandSpeed : 1;
             uint32 bExpands : 1;
+            uint32 bRangeIncreasesOverTime : 1;
         } flags;
         uint32 m_nFlags;
     };
@@ -96,7 +97,7 @@ public:
     float        m_fAnimLoop2Fire;  // time in animation2 when weapon should be fired
 
     float        m_fBreakoutTime;   // time after which player can break out of attack and run off
-    float        m_fSpeed;          // speed of projectile
+    float        m_Speed;          // speed of projectile
     float        m_fRadius;         // radius affected
     float        m_fLifespan;       // time taken for shot to dissipate
     float        m_fSpread;         // angle inside which shots are created
@@ -141,8 +142,8 @@ public:
     void StreamModelsForWeapon(eStreamingFlags streamingFlags);
 
     //! NOTSA: GetWeaponInfo for specific ped.
-    static auto GetWeaponInfo(CPed* ped) {
-        return GetWeaponInfo(ped->GetActiveWeapon().m_Type, ped->GetWeaponSkill());
+    static auto GetWeaponInfo(CPed* ped, std::optional<eWeaponSkill> skill = {}) {
+        return GetWeaponInfo(ped->GetActiveWeapon().m_Type, skill.value_or(ped->GetWeaponSkill()));
     }
 
     const auto& GetAimingOffset() const { return g_GunAimingOffsets[m_nAimOffsetIndex]; }
