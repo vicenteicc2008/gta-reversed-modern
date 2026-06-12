@@ -18,6 +18,8 @@
 #include "eCarWheel.h"
 #include "eCarNodes.h"
 
+constexpr float BILLS_EXTENSION_LIMIT = 1.0f;
+
 enum class eSkidmarkType : uint32;
 
 class CVehicleModelInfo;
@@ -47,7 +49,7 @@ public:
     std::array<float, 4>                m_fWheelsSuspensionCompressionPrev; // 0x7E4 - Filled with 1.f in the ctor
     std::array<float, 4>                m_WheelCounts;
 
-    float field_804;
+    float m_fBrakeCount;
     float m_fIntertiaValue1; //  m_anWheelSurfaceType[2]
     float m_fIntertiaValue2;
 
@@ -108,7 +110,8 @@ public:
     float m_fDoomVerticalRotation;
     float m_fDoomHorizontalRotation;
     float m_fForcedOrientation;
-    std::array<float, 2> m_fUpDownLightAngle;
+    float m_fPropRotate;
+    float m_fCumulativeDamage;
     uint8 m_nNumContactWheels;
     uint8 m_NumDriveWheelsOnGround;
     uint8 m_NumDriveWheelsOnGroundLastFrame;
@@ -127,9 +130,9 @@ public:
     static constexpr float FORKLIFT_COL_ANGLE_MULT = 0.0006f;
     static constexpr float DOZER_COL_ANGLE_MULT    = 0.0002f;
     static constexpr float ROLL_ONTO_WHEELS_FORCE  = 0.0025f;
-    static bool&           m_sAllTaxiLights;
-    static CVector&        vecHunterGunPos; // { 0.0f, 4.8f, -1.3f }
-    static CMatrix*        matW2B;
+    static inline auto& m_sAllTaxiLights = StaticRef<bool>(0xC1BFD0);
+    static inline auto& vecHunterGunPos = StaticRef<CVector>(0x8D3394); // { 0.0f, 4.8f, -1.3f }
+    static inline auto& matW2B = StaticRef<CMatrix>(0xC1C220);
 
     static constexpr auto Type = VEHICLE_TYPE_AUTOMOBILE;
 
@@ -147,7 +150,7 @@ public:
     void ProcessControlCollisionCheck(bool applySpeed) override;
     void ProcessControlInputs(uint8 playerNum) override;
     void GetComponentWorldPosition(int32 componentId, CVector& outPos) override;
-    bool IsComponentPresent(int32 componentId) override;
+    bool IsComponentPresent(int32 componentId) const override;
     void OpenDoor(CPed* ped, int32 componentId, eDoors door, float doorOpenRatio, bool playSound) override; // eCarNodes = componentId
 
     //!!!!!!!!!!!!!!!!!!!

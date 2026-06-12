@@ -134,27 +134,27 @@ int32 StoreScore(CPlayerInfo& player) {
 }
 
 /// ALTER_WANTED_LEVEL(010D)
-void AlterPlayerWantedLevel(CPlayerPed& player, int32 level) {
+void AlterPlayerWantedLevel(CPlayerPed& player, eWantedLevel level) {
     player.SetWantedLevel(level);
 }
 
 /// ALTER_WANTED_LEVEL_NO_DROP(010E)
-void AlterPlayerWantedLevelNoDrop(CPlayerPed& player, int32 level) {
+void AlterPlayerWantedLevelNoDrop(CPlayerPed& player, eWantedLevel level) {
     player.SetWantedLevelNoDrop(level);
 }
 
 /// IS_WANTED_LEVEL_GREATER(010F)
-bool IsWantedLevelGreater(CPlayerPed& player, int32 level) {
-    return (int32)player.GetWanted()->GetWantedLevel() > level;
+bool IsWantedLevelGreater(CPlayerPed& player, eWantedLevel level) {
+    return player.GetWanted()->GetWantedLevel() > level;
 }
 
 /// CLEAR_WANTED_LEVEL(0110)
 void ClearWantedLevel(CPlayerPed& player) {
-    player.GetWanted()->SetWantedLevel(0);
+    player.GetWanted()->SetWantedLevel(eWantedLevel::WANTED_CLEAN);
 }
 
 /// SET_MAX_WANTED_LEVEL(01F0)
-void SetMaxWantedLevel(int32 level) {
+void SetMaxWantedLevel(eWantedLevel level) {
     CWanted::SetMaximumWantedLevel(level);
 }
 
@@ -239,7 +239,7 @@ void MakePlayerSafeForCutscene(uint32 playerIdx) {
 /// IS_PLAYER_TARGETTING_CHAR(0457)
 bool IsPlayerTargettingChar(CPlayerPed& player, CPed* target) {
     CEntity* targetedObject = player.m_pTargetedObject;
-    if (targetedObject && targetedObject->IsPed() && targetedObject == target) {
+    if (targetedObject && targetedObject->GetIsTypePed() && targetedObject == target) {
         return true;
     }
 
@@ -253,7 +253,7 @@ bool IsPlayerTargettingChar(CPlayerPed& player, CPed* target) {
 /// IS_PLAYER_TARGETTING_OBJECT(0458)
 bool IsPlayerTargettingObject(CPlayerPed& player, CObject* target) {
     CEntity* targetedObject = player.m_pTargetedObject;
-    return targetedObject && targetedObject->IsObject() && targetedObject == target;
+    return targetedObject && targetedObject->GetIsTypeObject() && targetedObject == target;
 }
 
 /// GIVE_REMOTE_CONTROLLED_MODEL_TO_PLAYER(046E)

@@ -5,8 +5,7 @@
 #include "AEAudioUtility.h"
 
 auto& Frequency = StaticRef<LARGE_INTEGER>(0xB610F0);
-uint64& startTimeMs = *reinterpret_cast<uint64*>(0xb610f8);
-float (&CAEAudioUtility::m_sfLogLookup)[50][2] = *reinterpret_cast<float (*)[50][2]>(0xb61100);
+auto& startTimeMs = StaticRef<uint64>(0xb610f8);
 
 // NOTE: For me all values were 0... The below values should be the correct ones:
 static constexpr std::array<eSoundBank, AE_SCRIPT_BANK_LAST - AE_SCRIPT_BANK_FIRST> gScriptBanksLookup = {
@@ -168,7 +167,7 @@ CVehicle* CAEAudioUtility::FindVehicleOfPlayer() {
         return vehicle;
 
     auto* attach = player->m_pAttachedTo->AsAutomobile();
-    if (attach && attach->IsVehicle())
+    if (attach && attach->GetIsTypeVehicle())
         return attach;
 
     return vehicle;

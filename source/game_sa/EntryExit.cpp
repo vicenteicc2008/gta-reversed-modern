@@ -11,10 +11,6 @@
 #include "Object.h"
 #include "Interior/InteriorManager_c.h"
 
-bool& CEntryExit::ms_bWarping = *(bool*)0x96A7B8;
-CObject*& CEntryExit::ms_pDoor = *(CObject**)0x96A7BC;
-CEntryExit*& CEntryExit::ms_spawnPoint = *(CEntryExit**)0x96A7C0;
-
 void CEntryExit::InjectHooks() {
     RH_ScopedClass(CEntryExit);
     RH_ScopedCategoryGlobal();
@@ -39,7 +35,7 @@ CEntryExit::CEntryExit(
     float entranceAngleDeg,
     CVector exit,
     float exitAngle,
-    int32 area,
+    eAreaCodes area,
     CEntryExit::eFlags flags,
     int32 skyColor,
     int32 timeOn, int32 timeOff,
@@ -54,7 +50,7 @@ CEntryExit::CEntryExit(
         center.y + entranceRange.y / 2.f,
     },
     m_vecExitPos{ exit + CVector{ 0.f, 0.f, 1.f } },
-    m_nArea{ (uint8)area },
+    m_nArea{ area },
     m_nNumberOfPeds{ (uint8)numberOfPeds },
     m_fExitAngle{ exitAngle },
     m_nSkyColor{ (uint8)skyColor },
@@ -327,7 +323,7 @@ bool CEntryExit::TransitionFinished(CPed* ped) {
     const auto spawnPos = ms_spawnPoint->m_vecExitPos;
 
     if (const auto entity = ped->GetEntityThatThisPedIsHolding()) {
-        entity->m_nAreaCode = (eAreaCodes)ms_spawnPoint->m_nArea;
+        entity->m_AreaCode = (eAreaCodes)ms_spawnPoint->m_nArea;
     }
 
     const auto DisplayEnExName = [this]{
@@ -409,9 +405,9 @@ bool CEntryExit::TransitionFinished(CPed* ped) {
     }
 
     // ms_exitEnterState == 3
-    ped->m_nAreaCode = (eAreaCodes)CGame::currArea;
+    ped->m_AreaCode = (eAreaCodes)CGame::currArea;
     if (ped->m_pVehicle && ped->bInVehicle) {
-        ped->m_pVehicle->m_nAreaCode = (eAreaCodes)CGame::currArea;
+        ped->m_pVehicle->m_AreaCode = (eAreaCodes)CGame::currArea;
     }
     ped->m_pEnex = CGame::CanSeeOutSideFromCurrArea() ? nullptr : this; // Inverted
 
@@ -610,7 +606,7 @@ void CEntryExit::WarpGangWithPlayer(CPlayerPed* player) {
         // Make the member be heading towards the player
         mem->m_fCurrentRotation = mem->m_fAimingRotation = memHeading;
         mem->SetHeading(memHeading);
-        mem->m_nAreaCode = player->m_nAreaCode;
+        mem->SetAreaCode(player->GetAreaCode());
         mem->m_pEnex = player->m_pEnex;
     }
 }
@@ -618,9 +614,18 @@ void CEntryExit::WarpGangWithPlayer(CPlayerPed* player) {
 // 0x43E990
 void CEntryExit::ProcessStealableObjects(CPed* ped) {
     const auto helde = ped->GetEntityThatThisPedIsHolding();
-    if (!helde || !helde->IsObject() || !helde->AsObject()->objectFlags.bIsLiftable) {
+    if (!helde) {
         return;
     }
+
+    if (!helde->GetIsTypeObject()) {
+        return; 
+    }
+
+    if (!helde->AsObject()->objectFlags.bIsLiftable) {
+        return;
+    }
+
     const auto heldobj = helde->AsObject();
     switch (heldobj->m_nObjectType) {
     case OBJECT_MISSION:
@@ -637,5 +642,5 @@ void CEntryExit::ProcessStealableObjects(CPed* ped) {
         break;
     }
     }
-    heldobj->m_nAreaCode = ms_spawnPoint->GetArea();
+    heldobj->SetAreaCode(ms_spawnPoint->GetArea());
 }

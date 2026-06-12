@@ -84,18 +84,18 @@ void CBmx::ProcessControl() {
 
     CBike::ProcessControl();
 
-    if (m_bWasPostponed || m_nStatus != STATUS_PLAYER || !m_pDriver) {
+    if (GetWasPostponed() || GetStatus() != STATUS_PLAYER || !m_pDriver) {
         return;
     }
 
-    auto animBikeSprint = RpAnimBlendClumpGetAssociation(m_pDriver->m_pRwClump, ANIM_ID_BIKE_SPRINT);
+    auto animBikeSprint = RpAnimBlendClumpGetAssociation(m_pDriver->GetRpClump(), ANIM_ID_BIKE_SPRINT);
     bool isMountainBike = GetModelId() == MODEL_MTBIKE;
 
     if (animBikeSprint && animBikeSprint->GetBlendAmount() > 0.01f) {
         float mult         = isMountainBike ? MTB_SPRINT_LEANMULT : BMX_SPRINT_LEANMULT;
         m_fSprintLeanAngle = std::sin(animBikeSprint->GetCurrentTime() / animBikeSprint->GetHier()->GetTotalTime() * TWO_PI + BMX_SPRINT_LEANSTART) * animBikeSprint->GetBlendAmount() * mult;
     } else {
-        auto animBikePedal = RpAnimBlendClumpGetAssociation(m_pDriver->m_pRwClump, ANIM_ID_BIKE_PEDAL);
+        auto animBikePedal = RpAnimBlendClumpGetAssociation(m_pDriver->GetRpClump(), ANIM_ID_BIKE_PEDAL);
         if (animBikePedal && animBikePedal->GetBlendAmount() > 0.01f) {
             float mult = isMountainBike ? MTB_PEDAL_LEANMULT : BMX_PEDAL_LEANMULT;
             GetRideAnimData()->LeanAngle += std::sin(animBikePedal->GetCurrentTime() / animBikePedal->GetHier()->GetTotalTime() * TWO_PI + BMX_PEDAL_LEANSTART) * animBikePedal->GetBlendAmount() * mult;
@@ -117,7 +117,7 @@ void CBmx::LaunchBunnyHopCB(CAnimBlendAssociation* assoc, void* data) {
         (bmx->m_WheelCounts[2] > 0.0f || bmx->m_WheelCounts[3] > 0.0f)
     ) {
         auto power = std::min(bmx->m_fControlJump / 25.0f, 1.0f) + 1.0f;
-        if (bmx->m_nStatus == STATUS_PLAYER) {
+        if (bmx->GetStatus() == STATUS_PLAYER) {
             power *= CStats::GetFatAndMuscleModifier(STAT_MOD_6);
         }
         if (CCheat::IsActive(CHEAT_HUGE_BUNNY_HOP)) {
@@ -150,7 +150,7 @@ void CBmx::BlowUpCar(CEntity* damager, bool bHideExplosion) {
 // 0x6C0590
 void CBmx::ProcessBunnyHop() {
     auto* anim = m_pDriver
-        ? RpAnimBlendClumpGetAssociation(m_pDriver->m_pRwClump, ANIM_ID_BIKE_BUNNYHOP)
+        ? RpAnimBlendClumpGetAssociation(m_pDriver->GetRpClump(), ANIM_ID_BIKE_BUNNYHOP)
         : nullptr;
 
     if (GetStatus() != STATUS_PLAYER || !m_pDriver || !m_pDriver->IsPlayer()) {
@@ -166,7 +166,7 @@ void CBmx::ProcessBunnyHop() {
 
     if (pad->IsLeftShoulder1Pressed() && !pad->DisablePlayerControls && m_fControlJump == 0.0f) {
         m_fControlJump += CTimer::GetTimeStep();
-        anim = CAnimManager::BlendAnimation(m_pDriver->m_pRwClump, m_RideAnimData.AnimGroup, ANIM_ID_BIKE_BUNNYHOP, 8.0f);
+        anim = CAnimManager::BlendAnimation(m_pDriver->GetRpClump(), m_RideAnimData.AnimGroup, ANIM_ID_BIKE_BUNNYHOP, 8.0f);
         if (anim) {
             anim->SetCurrentTime(0.0f);
             anim->SetFlag(ANIMATION_IS_PLAYING, false);
@@ -201,7 +201,7 @@ void CBmx::ProcessBunnyHop() {
     if (anim) {
         if (anim->GetBlendAmount() > 0.5f) {
             m_GasPedal                                   = 0.0f;
-            FindPlayerPed()->m_pPlayerData->m_fMoveSpeed = 0.0f;
+            FindPlayerPed()->GetPlayerData()->m_fMoveSpeed = 0.0f;
             if (!vehicleFlags.bIsHandbrakeOn && (m_aWheelRatios[0] < 1.0f || m_aWheelRatios[1] < 1.0f || m_aWheelRatios[2] < 1.0f || m_aWheelRatios[3] < 1.0f)) {
                 m_bIsFreewheeling = true;
             }

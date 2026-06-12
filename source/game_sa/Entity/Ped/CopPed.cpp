@@ -103,14 +103,14 @@ CCopPed::CCopPed(uint32_t copTypeOrModelID) :
     }
     }
     m_bDontPursuit = false;
-    field_74C = 0;
+    m_nAttackTimer = 0;
     field_79D = 0;
     field_7A4 = 0;
 
     CEntity::ClearReference(m_pTargetedObject); // Oookay?
 
-    m_pIntelligence->SetDmRadius(60.0f);
-    m_pIntelligence->SetNumPedsToScan(8);
+    GetIntelligence()->SetDmRadius(60.0f);
+    GetIntelligence()->SetNumPedsToScan(8);
     m_pedSpeech.Initialise(this);
     m_pCopPartner = nullptr;
     std::ranges::fill(m_apCriminalsToKill, nullptr);
@@ -237,7 +237,7 @@ void CCopPed::ClearCriminalsToKill() {
 
 // 0x5DE160
 void CCopPed::ProcessControl() {
-    if (FindPlayerWanted()->GetWantedLevel() != 0) {
+    if (FindPlayerWanted()->GetWantedLevel() != eWantedLevel::WANTED_CLEAN) {
         if (GetIntelligence()->GetPedDecisionMakerType() == eDecisionMakerEvents::DM_EVENT_PED_ENTERED_MY_VEHICLE)
         {
             GetIntelligence()->SetPedDecisionMakerType(eDecisionMakerEvents::DM_EVENT_KNOCK_OFF_BIKE);
@@ -246,7 +246,7 @@ void CCopPed::ProcessControl() {
 
     CPed::ProcessControl();
 
-    if (m_bWasPostponed)
+    if (GetWasPostponed())
         return;
 
     if (m_nPedState == PEDSTATE_DEAD)

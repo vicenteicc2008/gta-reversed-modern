@@ -19,13 +19,6 @@
  *
  */
 
-void (*(&CCheat::m_aCheatFunctions)[TOTAL_CHEATS])() = *reinterpret_cast<void (*(*)[TOTAL_CHEATS])()>(0x8A5B58);
-int32 (&CCheat::m_aCheatHashKeys)[TOTAL_CHEATS] = *reinterpret_cast<int32 (*)[TOTAL_CHEATS]>(0x8A5CC8);
-bool (&CCheat::m_aCheatsActive)[TOTAL_CHEATS] = *reinterpret_cast<bool (*)[TOTAL_CHEATS]>(0x969130);
-
-char (&CCheat::m_CheatString)[CHEAT_STRING_SIZE] = *reinterpret_cast<char (*)[CHEAT_STRING_SIZE]>(0x969110);
-bool& CCheat::m_bHasPlayerCheated = *reinterpret_cast<bool*>(0x96918C);
-
 bool CCheat::m_bShowMappings;
 uint32 CCheat::m_nLastScriptBypassTime;
 
@@ -635,7 +628,7 @@ void CCheat::NinjaCheat() {
 // 0x4396c0
 void CCheat::NotWantedCheat() {
     CPlayerPed* player = FindPlayerPed();
-    player->CheatWantedLevel(0);
+    player->CheatWantedLevel(eWantedLevel::WANTED_CLEAN);
     player->bWantedByPolice = false;
     Toggle(CHEAT_I_DO_AS_I_PLEASE);
 }
@@ -700,7 +693,7 @@ void CCheat::TankerCheat() {
     auto* trailer = new CTrailer(MODEL_PETROTR, RANDOM_VEHICLE);
     trailer->SetPosn(vehicle->GetPosition());
     trailer->SetOrientation(0.0f, 0.0f, DegreesToRadians(200));
-    trailer->m_nStatus = STATUS_ABANDONED;
+    trailer->SetStatus(STATUS_ABANDONED);
     CWorld::Add(trailer);
     trailer->SetTowLink(vehicle, true);
 }
@@ -708,7 +701,7 @@ void CCheat::TankerCheat() {
 // 0x43A0B0
 CVehicle* CCheat::VehicleCheat(eModelID modelId) {
     const auto player = FindPlayerPed();
-    if (player->m_nAreaCode != AREA_CODE_NORMAL_WORLD) {
+    if (player->GetAreaCode() != AREA_CODE_NORMAL_WORLD) {
         return nullptr;
     }
 
@@ -739,7 +732,7 @@ CVehicle* CCheat::VehicleCheat(eModelID modelId) {
 
     vehicle->SetPosn(pos);
     vehicle->SetOrientation(0.0f, 0.0f, rotZ);
-    vehicle->m_nStatus = STATUS_ABANDONED;
+    vehicle->SetStatus(STATUS_ABANDONED);
     vehicle->m_nDoorLock = CARLOCK_UNLOCKED;
     CWorld::Add(vehicle);
     CTheScripts::ClearSpaceForMissionEntity(pos, vehicle);
@@ -877,13 +870,13 @@ void CCheat::VillagePeopleCheat() {
 // 0x4396f0
 void CCheat::WantedCheat() {
     CPlayerPed* player = FindPlayerPed();
-    player->CheatWantedLevel(6);
+    player->CheatWantedLevel(eWantedLevel::WANTED_LEVEL_6);
 }
 
 // 0x438f20
 void CCheat::WantedLevelDownCheat() {
     CPlayerPed* player = FindPlayerPed();
-    player->CheatWantedLevel(0);
+    player->CheatWantedLevel(eWantedLevel::WANTED_CLEAN);
 }
 
 // 0x438e90
@@ -893,8 +886,8 @@ void CCheat::WantedLevelUpCheat() {
     if (!player)
         return;
 
-    uint8 level = player->GetWantedLevel();
-    player->CheatWantedLevel(std::min(level + 2, 6));
+    const auto level = player->GetWantedLevel();
+    player->CheatWantedLevel((eWantedLevel)(std::min(+level + +eWantedLevel::WANTED_LEVEL_2, +eWantedLevel::WANTED_LEVEL_6)));
 }
 
 // refactored

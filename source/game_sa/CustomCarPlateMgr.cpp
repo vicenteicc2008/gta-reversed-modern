@@ -1,5 +1,6 @@
 #include "StdInc.h"
 
+#include <reversiblebugfixes/Bugs.hpp>
 #include "CustomCarPlateMgr.h"
 
 void CCustomCarPlateMgr::InjectHooks() {
@@ -97,7 +98,7 @@ int8 CCustomCarPlateMgr::LoadPlatecharsetDat(const char* filename, uint8* data) 
 }
 
 auto ResolvePlateType(uint8 plateType) {
-    return plateType == (uint8)-1 ? CCustomCarPlateMgr::GetMapRegionPlateDesign() : plateType;
+    return plateType == CARPLATE_DEFAULT ? CCustomCarPlateMgr::GetMapRegionPlateDesign() : plateType;
 }
 
 // 0x6FDE50
@@ -399,11 +400,13 @@ bool CCustomCarPlateMgr::GeneratePlateText(char* out, uint32 length) {
         return false;
 
     constexpr auto RandomAlphanumeric = [] {
-        return (char)CGeneral::GetRandomNumberInRange('A', 'Z');
+        return notsa::bugfixes::CCustomCarPlateMgr_GeneratePlateText_MissingLettersAndDigits
+            ? CGeneral::GetRandomNumberInRange('A', 'Z', true)
+            : CGeneral::GetRandomNumberInRange('A', 'X');
     };
 
     constexpr auto RandomNumeric = [] {
-        return (char)CGeneral::GetRandomNumberInRange('0', '9');
+        return CGeneral::GetRandomNumberInRange('0', '9', notsa::bugfixes::CCustomCarPlateMgr_GeneratePlateText_MissingLettersAndDigits);
     };
 
     uint32 charIdx{};

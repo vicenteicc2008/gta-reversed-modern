@@ -37,6 +37,9 @@
 #include "TwoDEffectsDebugModule.hpp"
 #include "VehicleInfoDebugModule.h"
 #include "CoverPointsDebugModule.hpp"
+#include "LoadMonitorDebugModule.hpp"
+#include "DoorDebugModule.hpp"
+#include "Audio/SoundManagerDebugModule.hpp"
 #include "Audio/AudioDebugModule.hpp"
 
 DebugModules::DebugModules(ImGuiContext* ctx) :
@@ -120,6 +123,9 @@ void DebugModules::CreateModules() {
     Add<notsa::debugmodules::CheckpointsDebugModule>();
     Add<ProcObjectDebugModule>();
     Add<VehicleInfoDebugModule>();
+    Add<notsa::debugmodules::SoundManagerDebugModule>();
+    Add<notsa::debugmodules::LoadMonitorDebugModule>();
+    Add<notsa::debugmodules::DoorDebugModule>();
 
     // Stuff that is present in multiple menus
     Add<notsa::debugmodules::TwoDEffectsDebugModule>(); // Visualization + Extra
@@ -178,7 +184,7 @@ void DebugModules::DoDeserializeModules() {
         }
         try {
             inf >> states;
-        } catch (const json::exception& e) {
+        } catch ([[maybe_unused]] const json::exception& e) {
             const fs::path bakFileName{std::format("DebugModules-{}.json.bak", time(nullptr))};
             fs::copy("DebugModules.json", bakFileName);
             NOTSA_LOG_ERR("Error while loading `DebugModules.json`: {}", e.what());
@@ -205,7 +211,7 @@ void DebugModules::DoDeserializeModules() {
         // Now deserialize... We handle exceptions too, because otherwise we get a weird crash in a dll we don't have pdb's for????
         try {
             m->Deserialize(*s);
-        } catch (const json::exception& e) {
+        } catch ([[maybe_unused]] const json::exception& e) {
             NOTSA_LOG_ERR("JSON exception occurred while deserializing module `{}`: {}", id, e.what());
         }
     }
